@@ -1,1 +1,51 @@
-node_modules
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+lib/
+build/
+*.tsbuildinfo
+
+# Android
+.gradle/
+android/.gradle/
+android/build/
+android/.cxx/
+android/local.properties
+android/src/main/jniLibs/
+*.iml
+
+# iOS / CocoaPods
+ios/Pods/
+ios/build/
+ios/**/*.xcworkspace/xcuserdata/
+ios/**/*.xcodeproj/xcuserdata/
+ios/**/*.xcodeproj/project.xcworkspace/xcuserdata/
+DerivedData/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+example/ios/Pods
+# Vendored/generated native build helpers
+shared/**/third_party/
+
+# Example app generated output
+example/node_modules/
+example/dist/
+example/.rspeedy/
+
+# Editor / OS
+.DS_Store
+*.log
+.idea/
+.vscode/
+
+# Agent tooling (not project code)
+.agents/
+.claude/
+skills-lock.json

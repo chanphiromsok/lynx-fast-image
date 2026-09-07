@@ -1,0 +1,31 @@
+name: LynxFastImageExample
+
+options:
+  bundleIdPrefix: com.lynxfastimage
+  deploymentTarget:
+    iOS: "14.0"
+  createIntermediateGroups: true
+
+targets:
+  LynxFastImageExample:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lynxfastimage.example
+        MARKETING_VERSION: "0.0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: LynxFastImage
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # rspeedy dev server is plain http://localhost:3000
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true

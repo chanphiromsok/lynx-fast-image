@@ -1,0 +1,83 @@
+# Minimal native host for testing <x-lynx-fast-image> without Expo / React Native.
+# Uses the SAME prebuilt Lynx 4.0.0 pods a production host resolves.
+# Deliberately NO `LynxService/Image` and NO Fresco — the element renders through
+# its own SDWebImage (pulled by the lynx-fast-image podspec).
+
+platform :ios, '14.0'
+install! 'cocoapods', :deterministic_uuids => false
+
+target 'LynxFastImageExample' do
+  # No `use_frameworks!`: build pods as static libraries. A dashed pod name
+  # ("lynx-fast-image") + Swift + `use_frameworks!` makes the generated
+  # `-Swift.h` import `<lynx_fast_image/lynx_fast_image.h>`, which CocoaPods
+  # doesn't create. As a static lib the mixed module resolves cleanly, and this
+  # matches how the real Expo host consumes Lynx.
+  # Our Swift pod imports `Lynx` and `SDWebImage`; as static libs they need
+  # module maps generated.
+  devtool = ENV['LFI_DISABLE_DEVTOOL'] != '1'
+
+  pod 'Lynx', '4.0.0', :subspecs => ['Framework'], :modular_headers => true
+  pod 'PrimJS', '4.0.0', :subspecs => ['quickjs', 'napi']
+  pod 'LynxService', '4.0.0',
+      :subspecs => devtool ? ['Log', 'Http', 'Devtool'] : ['Log', 'Http']
+  pod 'SDWebImage', '~> 5.21', :modular_headers => true
+
+  pod 'lynx-fast-image', :path => '../../ios'
+
+  # DevTool + rspeedy Fast Refresh (Debug only). Mirrors Lynx Explorer.
+  # Disable with `LFI_DISABLE_DEVTOOL=1 pod install`.
+  if devtool
+    pod 'BaseDevtool', '4.0.0'
+    pod 'LynxDevtool', '4.0.0', :subspecs => ['Framework']
+    pod 'DebugRouter', '~> 5.0'
+    pod 'DebugRouter/MessageTransceiverEnable', '~> 5.0'
+  end
+end
+
+post_install do |installer|
+  # Lynx's podspec injects `-Werror` through OTHER_C(PLUSPLUS)FLAGS, so its own
+  # sources fail to compile against a newer iOS SDK (deprecated `keyWindow`,
+  # `setMenuVisible:` ...). Mirror the consuming Expo host's post-install: turn
+  # the error back into a warning for the Lynx-family targets only.
+  disabled = ['-Wno-error', '-Wno-deprecated-declarations', '-Wno-deprecated-implementations']
+  lynx_targets = %w[Lynx LynxBase LynxService LynxServiceAPI BaseDevtool
+                    LynxDevtool DebugRouter PrimJS]
+
+  installer.pods_project.targets.each do |t|
+    t.build_configurations.each do |c|
+      c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      c.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'gnu++20'
+
+      next unless lynx_targets.include?(t.name)
+
+      c.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+      %w[OTHER_CFLAGS OTHER_CPLUSPLUSFLAGS].each do |key|
+        flags = c.build_settings[key] || ['$(inherited)']
+        flags = [flags] unless flags.is_a?(Array)
+        c.build_settings[key] = (flags + disabled).uniq
+      end
+    end
+  end
+
+  # `LynxDevToolService` (`@LynxServiceRegister`) and `LynxWebSocketModule`
+  # register via a `__LYNX__DATA` section, which `-ObjC` does NOT preserve in a
+  # static lib — so the linker dead-strips them and rspeedy Fast Refresh can't
+  # open its WebSocket (`LynxWebSocketModule failed`). Force-load the archives.
+  next if ENV['LFI_DISABLE_DEVTOOL'] == '1'
+
+  # Only LynxService — it holds `LynxDevToolService` (`@LynxServiceRegister`).
+  # Once that object is loaded, the `LynxWebSocketModule` class it returns is
+  # pulled from libLynxDevtool.a by normal archive resolution. Force-loading the
+  # devtool archives too causes duplicate `lynx::devtool::…` C++ symbols.
+  extra_ldflags = %w[LynxService].map do |lib|
+    %(-force_load "${PODS_CONFIGURATION_BUILD_DIR}/#{lib}/lib#{lib}.a")
+  end.join(' ')
+
+  installer.aggregate_targets.each do |agg|
+    %w[debug release].each do |config|
+      path = agg.xcconfig_path(config.capitalize)
+      next unless File.exist?(path)
+      File.open(path, 'a') { |f| f.puts %(OTHER_LDFLAGS = $(inherited) #{extra_ldflags}) }
+    end
+  end
+end
