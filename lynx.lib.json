@@ -1,0 +1,29 @@
+{
+  "platforms": {
+    "android": {
+      "packageName": "com.example.lynxfastimage",
+      "sourceDir": "android",
+      "nodeApiAddons": [
+        {
+          "name": "LynxFastImageModuleNapi",
+          "libraryName": "LynxFastImageModuleNapi",
+          "jniLibsDir": "android/src/main/jniLibs",
+          "required": false
+        }
+      ]
+    },
+    "ios": {
+      "sourceDir": "ios",
+      "podspecPath": "ios/lynx-fast-image.podspec",
+      "nodeApiAddons": [
+        {
+          "name": "LynxFastImageModuleNapi",
+          "podName": "lynx-fast-image",
+          "podspecPath": "ios/lynx-fast-image.podspec",
+          "addonUseHeader": "addon_use.h",
+          "required": true
+        }
+      ]
+    }
+  }
+}
