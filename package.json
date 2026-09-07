@@ -12,6 +12,7 @@
     "ios",
     "src",
     "types",
+    "expo-module.config.json",
     "lynx.lib.json",
     "README.md"
   ],
