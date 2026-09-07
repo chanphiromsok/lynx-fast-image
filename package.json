@@ -5,10 +5,9 @@
   "license": "Apache-2.0",
   "type": "module",
   "main": "./src/index.ts",
-  "types": "./types/index.d.ts",
+  "types": "./src/index.ts",
   "files": [
     "android",
-    "shared",
     "generated",
     "ios",
     "src",
@@ -19,9 +18,8 @@
   "scripts": {
     "codegen": "lynx-autolink-codegen"
   },
-  "dependencies": {
-    "@lynx-js/weak-node-api": "^0.0.9",
-    "@lynx-js/lynx-library-headers": "*"
+  "peerDependencies": {
+    "@lynx-js/react": ">=0.100.0"
   },
   "devDependencies": {
     "@lynx-js/autolink-codegen": "^0.4.1"

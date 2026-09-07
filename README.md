@@ -1,6 +1,12 @@
 # lynx-fast-image
 
-Native Lynx library.
+Custom Lynx element `<x-lynx-fast-image>` that renders images through
+SDWebImage (iOS) and Glide (Android) instead of Lynx's built-in `<image>`
+service. It exposes the useful parts of the Expo Image API to ReactLynx.
+
+This is a custom native component, **not** a `LynxServiceImageProtocol` /
+`ILynxImageService` implementation. It never adds `LynxService/Image`,
+`lynx-service-image`, or Fresco, and never routes a request through them.
 
 ## Development
 
@@ -9,34 +15,29 @@ npm install
 npm run codegen
 ```
 
-Generated JS specs are written to `generated/`.
+`npm run codegen` (`lynx-autolink-codegen`) regenerates the platform native
+module spec/facade from `types/platform-native-module.d.ts` and `lynx.lib.json`:
 
-Platform native module typings live in `types/platform-native-module.d.ts`.
+- `generated/LynxFastImageModule.ts` — BTS TypeScript facade
+- `ios/src/generated/LynxFastImageModuleSpec.{h,m}`
+- `android/src/main/java/com/example/lynxfastimage/generated/LynxFastImageModuleSpec.java`
 
-NAPI native module typings live in `types/napi-native-module.d.ts` and use a minimal shared C++ N-API callback stub.
-Selected native files are written to `android/`, `ios/`, and `shared/`. The package
-is discovered by Lynx through `lynx.lib.json`.
+## Layout
 
+- `src/` — ReactLynx wrapper and public TypeScript API
+- `ios/` — Objective-C `LynxUI` wrapper + Swift view logic
+- `android/` — Kotlin `LynxUI` wrapper + view logic
+- `types/` — platform native module typings (`@lynxmodule`)
+- `upstream/expo-image/` — read-only Expo Image 57.0.4 reference snapshot
+  (not shipped; see `package.json` `files`)
 
-## NAPI Native Module
+## Native dependencies
 
-Codegen creates `shared/nativeModule/LynxFastImageModuleNapi.cc` once and
-preserves it on later runs. After changing the typings, rerun codegen to refresh
-generated facade and registration files, then manually keep the user-owned C++
-callbacks and exports in sync. If the module class is renamed, also rename or
-remove the old C++ file and update the addon name in `lynx.lib.json`; codegen
-does not delete stale user-owned files or rewrite the manifest.
+Both engines resolve as shared host dependencies, matching Expo Image 57.0.4:
 
-On Android and iOS, import the package root in BTS to install the
-generated `NativeModules.LynxFastImageModuleNapi` shim. The generated
-TypeScript shim is only for the selected mobile runtimes; Lynxtron does not
-import it.
+- iOS: `Lynx 4.0.0`, `SDWebImage ~> 5.21.0` (added in the iOS rendering phase)
+- Android: `org.lynxsdk.lynx:lynx:4.0.0`, Glide `5.0.5` (added in the Android
+  rendering phase)
 
-
-Android source builds resolve `org.lynxsdk.lynx:primjs` using the Gradle
-property `lynx.primjs.version`, defaulting to `4.+`. Set the property from
-the host root build when the App needs to pin the same PrimJS runtime version
-used by other Lynx dependencies.
-
-
-
+The consuming host currently integrated against is `expo-lynx-view` on
+Lynx `4.0.0`.
